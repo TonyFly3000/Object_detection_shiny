@@ -1,0 +1,12 @@
+name: Object_detection
+title: Object_detection
+username:
+account: tduan
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1424413
+bundleId: 2569165
+url: https://tduan.shinyapps.io/Object_detection/
+when: 1573067174.64797
+asMultiple: FALSE
+asStatic: FALSE

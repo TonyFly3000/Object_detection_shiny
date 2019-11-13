@@ -1,0 +1,12 @@
+name: picture_model
+title: picture_model
+username:
+account: tduan
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1423553
+bundleId: 2564746
+url: https://tduan.shinyapps.io/picture_model/
+when: 1572934095.03629
+asMultiple: FALSE
+asStatic: FALSE
