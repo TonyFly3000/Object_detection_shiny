@@ -34,7 +34,7 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                   # Sidebar to demonstrate various slider options ----
                   sidebarPanel(
                     tabsetPanel(type = "tabs",
-                 #######################    model input        ##########################
+                                #######################    model input        ##########################
                                 tabPanel("model",
                                          selectInput('model', 'model:', c('no model','dog_cat_CNN_model','VGG16_dog_cat_cnn_model','mobilenet_model','resnet50_model','tiny_yolo'),selected = 'no model')
                                          ,actionButton("Run_model", "Run_model",class = "butt",)
@@ -45,7 +45,7 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                          ,downloadButton("downloadPic", "download picture")
                                          ,h4('Due to Server compacity,the App may crash.Just refrsh the page if it crash')
                                 ),
-                 ##########################    picture edior       #######################
+                                ##########################    picture edior       #######################
                                 tabPanel("picture edior",
                                          
                                          # Input: Simple integer interval ----
@@ -75,7 +75,7 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                                                                 'flip'='flip'),
                                                       selected='normal') 
                                          
-                              
+                                         
                                          
                                          
                                 )
@@ -93,7 +93,7 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                          
                                          plotOutput('plot001',height= '500px' ),
                                          plotlyOutput("plot002")
-                                        
+                                         
                                          
                                 ),
                                 
@@ -135,28 +135,29 @@ server <- function(input, output,session) {
   myCamera <- callModule(
     shinyviewr,
     'my_camera',
-    output_width = 300,
-    output_height = 300
+    output_width = 400,
+    output_height = 400
   )
   
   output$snapshot <- renderPlot({
     
     req(myCamera())
-    #writeImage(myCamera(), 'output.jpg', quality = 85)
     plot(myCamera(), main = 'My Photo!')
     
   })
   
+  v <- reactiveValues(counter = 1)
   observeEvent(myCamera(), {
     
-    photo <- myCamera() 
-    #writeImage(photo, 'output.jpg', quality = 85)
-    
+    v$counter =2
+    png(filename="cam.png")
+    plot(myCamera(), main = 'My Photo!')
+    dev.off()
     # make predictions then decode and print them
-
+    
     
   })
- 
+  
   
   
   #############################################################
@@ -164,11 +165,17 @@ server <- function(input, output,session) {
   
   #################  photo changer ############################## 
   data001=reactive({
-    if(is.null(input$input001)==TRUE){
-      im <- readImage('dog_sample001.jpg')
-      #im <- load.image('dog_sample001.jpg')
-    }else{
+    if(is.null(input$input001)==FALSE){
       im <- readImage(input$input001$datapath)
+      
+      #im <- load.image('dog_sample001.jpg')
+    }
+    else if(v$counter==2){
+      
+      im <- readImage('cam.png')
+    }
+    else{
+      im <- readImage('dog_sample001.jpg')
     }
     
     after_im=((EBImage::resize(im,input$img_width,input$img_height) +input$Brightness)*input$Contrast)^input$Gamma_Correction 
@@ -194,7 +201,7 @@ server <- function(input, output,session) {
                                     weights= tiny_yolo_pretrain_weight,
                                     labels= pre_labels )
         
-       
+        
         yolo_pred=image_darknet_detect(file = paste0(getwd(),'/output.jpg'),object = R_yolo, threshold = 0.15)
         
         setProgress(0.5)
@@ -209,13 +216,13 @@ server <- function(input, output,session) {
                                             model = model, weights = weights, labels = labels)
         
         
-
+        
         x <- image_darknet_classify(file = paste0(getwd(),'/output.jpg'), object = darknet_tiny)
         
         pre_table=do.call(rbind.data.frame, x[2]) %>% transmute(label=label,probability=probability) %>% head(3)
         
         Sys.sleep(0.2)
-   
+        
         
         output$plot001=renderPlot({
           
@@ -243,14 +250,14 @@ server <- function(input, output,session) {
           darknet_tiny
         })
         
-    
+        
         setProgress(1)
         
         ################       dog_cat_CNN_model    ################################################
         
       }else if(input$model=='dog_cat_CNN_model'){
         writeImage(data001(), 'output.jpg', quality = 85)
-
+        
         new_model <- load_model_hdf5("dog_cat_cnn_model_2.h5")
         setProgress(0.5)
         model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
@@ -259,9 +266,9 @@ server <- function(input, output,session) {
         Sys.sleep(0.2)
         x <- image_to_array(img)/225
         x <- array_reshape(x, c(1, dim(x)))
-
+        
         predcition <- as.data.frame(new_model %>% predict(x)) %>% rename(Cat=V1, Dog=V2)
-       
+        
         
         output$plot001=renderPlot({
           
@@ -293,7 +300,7 @@ server <- function(input, output,session) {
           print(summary(new_model))
         })
         
- 
+        
         setProgress(1)
         
         ################       VGG16_dog_cat_cnn_model    ################################################
@@ -304,7 +311,7 @@ server <- function(input, output,session) {
         
         Sys.sleep(0.2)
         
-  
+        
         new_model <- load_model_hdf5("VGG16_dog_cat_cnn_model.h5")
         setProgress(0.5)
         model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
@@ -313,9 +320,9 @@ server <- function(input, output,session) {
         Sys.sleep(0.2)
         x <- image_to_array(img)/225
         x <- array_reshape(x, c(1, dim(x)))
-
+        
         predcition <- as.data.frame(new_model %>% predict(x)) %>% rename(Cat=V1, Dog=V2)
-   
+        
         
         
         output$plot001=renderPlot({
@@ -348,7 +355,7 @@ server <- function(input, output,session) {
           print(summary(new_model))
         })
         
-
+        
         setProgress(1)
         
         
@@ -356,7 +363,7 @@ server <- function(input, output,session) {
         ################       mobilenet_model    ################################################
       }else if(input$model=='mobilenet_model'){
         writeImage(data001(), 'output.jpg', quality = 85)
-
+        
         new_model <- load_model_hdf5("mobilenet_model.h5")
         setProgress(0.5)
         model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
@@ -366,11 +373,11 @@ server <- function(input, output,session) {
         x <- image_to_array(img)
         x <- array_reshape(x, c(1, dim(x)))
         x <- imagenet_preprocess_input(x)
-      
+        
         preds <- new_model %>% predict(x)
         predcition=imagenet_decode_predictions(preds, top = 3)[[1]] %>%transmute(label=class_description,probability=score)
         
-
+        
         
         output$plot001=renderPlot({
           
@@ -398,10 +405,10 @@ server <- function(input, output,session) {
           print(summary(new_model))
         })
         
- 
+        
         setProgress(1)
         
-      
+        
         
         ################       resnet50_model    ################################################
       }else if(input$model=='resnet50_model'){
@@ -419,7 +426,7 @@ server <- function(input, output,session) {
         # make predictions then decode and print them
         preds <- new_model %>% predict(x)
         predcition=imagenet_decode_predictions(preds, top = 3)[[1]] %>%transmute(label=class_description,probability=score)
-   
+        
         output$plot001=renderPlot({
           
           plot(data001())
@@ -449,7 +456,7 @@ server <- function(input, output,session) {
           print(summary(new_model))
         })
         
-
+        
         setProgress(1)
         
       }
