@@ -5,7 +5,8 @@
 library('shiny')
 
 ###########  ui #####################
-ui = fluidPage( titlePanel("Object detection  with Shiny"),
+ui = fluidPage( 
+  titlePanel(title=div(img(src="logo.jpg"),"Object detection  with Shiny")),
                 sidebarLayout(
                   
                   

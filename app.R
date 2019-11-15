@@ -26,7 +26,7 @@ library(shinythemes)
 ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                 
                 # App title ----
-                titlePanel("Object detection  with Shiny"),
+                titlePanel(title=div(img(src="logo.jpg"),"Object detection  with Shiny")),
                 
                 # Sidebar layout with input and output definitions ----
                 sidebarLayout(
