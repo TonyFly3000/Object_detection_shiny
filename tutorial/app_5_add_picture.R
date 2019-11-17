@@ -1,6 +1,9 @@
 # if you do not have shiny ,please install 
 # install.packages('shiny')
 
+#options(repos = BiocInstaller::biocinstallRepos())
+#getOption("repos")
+
 
 library('shiny')
 library(EBImage)

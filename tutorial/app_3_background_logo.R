@@ -1,5 +1,8 @@
 # if you do not have shiny ,please install 
 # install.packages('shiny')
+#options(repos = BiocInstaller::biocinstallRepos())
+#getOption("repos")
+
 
 
 library('shiny')
@@ -7,7 +10,7 @@ library('shiny')
 ###########  ui #####################
 ui = fluidPage( 
 
-  
+
   
   titlePanel(title=div(img(src="logo.jpg"),"Object detection  with Shiny")),
                 sidebarLayout(
