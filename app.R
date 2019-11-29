@@ -1,7 +1,15 @@
+#install.packages('pacman')
+
+library(pacman)
 
 library(keras)
+#install_keras()
+
+
+
 library(shiny)
-library(shinysense)
+p_load_gh("nstrayer/shinysense")
+p_load_gh("bnosac/image/image.darknet")
 library(ggplot2)
 library(plotly)
 library(dplyr)
@@ -36,14 +44,15 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                     tabsetPanel(type = "tabs",
                                 #######################    model input        ##########################
                                 tabPanel("model",
-                                         selectInput('model', 'model:', c('no model','dog_cat_CNN_model','VGG16_dog_cat_cnn_model','mobilenet_model','resnet50_model','tiny_yolo'),selected = 'no model')
+                                         selectInput('model', 'model:', c('dog_cat_CNN_model','VGG16_dog_cat_cnn_model','mobilenet_model','resnet50_model','tiny_yolo'),selected = 'no model')
                                          ,actionButton("Run_model", "Run_model",class = "butt",)
                                          ,tags$head(tags$style(".butt{background-color:#DF3915;} .butt{color: #FFFFFF;}"))
                                          
-                                         ,br(),br(),br()
+                                         #,br(),br(),br()
                                          ,fileInput('input001', 'choose picture') 
-                                         ,downloadButton("downloadPic", "download picture")
-                                         ,h4('Due to Server compacity,the App may crash.Just refrsh the page if it crash')
+                                         
+                                         ,h6('Due to Server compacity,the App may crash.Just refrsh the page if it crash',style = "color:red")
+                                         ,plotlyOutput("plot002")
                                 ),
                                 ##########################    picture edior       #######################
                                 tabPanel("picture edior",
@@ -73,7 +82,9 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                          
                                          radioButtons('rotation', 'rotation', c('normal'='normal',
                                                                                 'flip'='flip'),
-                                                      selected='normal') 
+                                                      selected='normal')
+                                         
+                                         ,downloadButton("downloadPic", "download picture")
                                          
                                          
                                          
@@ -91,8 +102,9 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                 tabPanel("picture",
                                          #tableOutput('table001'),
                                          
-                                         plotOutput('plot001',height= '500px' ),
-                                         plotlyOutput("plot002")
+                                         plotOutput('plot001',height= '500px' )
+                                         
+                                         
                                          
                                          
                                 ),
@@ -106,11 +118,12 @@ ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
                                 tabPanel("Camera",
                                          
                                          shinyviewr_UI("my_camera", height = '400px')  ,
-                                         h2("Taken Photo"),
+                                         h2("Taken Photo:"),
                                          imageOutput("snapshot")
                                          #plotOutput('predPlot')
                                          
                                 )
+                                
                                 
                                 
                     )
