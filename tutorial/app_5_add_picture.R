@@ -4,8 +4,13 @@
 #options(repos = BiocInstaller::biocinstallRepos())
 #getOption("repos")
 
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#  install.packages("BiocManager")
 
-library('shiny')
+#BiocManager::install("EBImage")
+
+
+library(shiny)
 library(EBImage)
 ###########  ui #####################
 ui = fluidPage( 
@@ -80,6 +85,8 @@ ui = fluidPage(
 
 ###########  server  #####################
 server=function(input, output,session){
+  
+  
   
   #################  photo  ############################## 
   data001=reactive({

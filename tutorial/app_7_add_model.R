@@ -1,0 +1,510 @@
+#install.packages('pacman')
+
+library(pacman)
+
+library(keras)
+#install_keras()
+
+
+
+library(shiny)
+p_load_gh("nstrayer/shinysense")
+p_load_gh("bnosac/image/image.darknet")
+library(ggplot2)
+library(plotly)
+library(dplyr)
+
+
+#library(BiocManager)
+#options(repos = BiocManager::repositories())
+
+
+library(imager)
+library(EBImage)
+library(image.darknet)
+library(shinybusy)
+library(reshape2)
+library(reticulate)
+library(shinythemes)
+
+
+
+###############  ui.R     ###########################
+#  ui.R
+ui <- fluidPage(add_busy_spinner(spin = "fading-circle"),
+                
+                # App title ----
+                titlePanel(title=div(img(src="logo.jpg"),"Object detection  with Shiny")),
+                
+                # Sidebar layout with input and output definitions ----
+                sidebarLayout(
+                  
+                  # Sidebar to demonstrate various slider options ----
+                  sidebarPanel(
+                    tabsetPanel(type = "tabs",
+                                #######################    model input        ##########################
+                                tabPanel("model",
+                                         selectInput('model', 'model:', c('dog_cat_CNN_model','VGG16_dog_cat_cnn_model','mobilenet_model','resnet50_model','tiny_yolo'),selected = 'no model')
+                                         ,actionButton("Run_model", "Run_model",class = "butt",)
+                                         ,tags$head(tags$style(".butt{background-color:#DF3915;} .butt{color: #FFFFFF;}"))
+                                         
+                                         #,br(),br(),br()
+                                         ,fileInput('input001', 'choose picture') 
+                                         
+                                         ,h6('Due to Server compacity,the App may crash.Just refrsh the page if it crash',style = "color:red")
+                                         ,plotlyOutput("plot002")
+                                ),
+                                ##########################    picture edior       #######################
+                                tabPanel("picture edior",
+                                         
+                                         # Input: Simple integer interval ----
+                                         sliderInput("img_height", "img_height:",
+                                                     min = 400, max = 800,
+                                                     value = 675),
+                                         
+                                         # Input: Decimal interval with step value ----
+                                         sliderInput("img_width", "img_width:",
+                                                     min = 300, max = 1500,
+                                                     value = 1200),
+                                         # Input: Decimal interval with step value ----
+                                         sliderInput("Brightness", "Brightness:",
+                                                     min = -1, max = 1,
+                                                     value = 0,step=0.1),
+                                         # Input: Decimal interval with step value ----
+                                         sliderInput("Contrast", "Contrast:",
+                                                     min = 0, max = 2,
+                                                     value = 1,step=0.1),
+                                         
+                                         # Input: Decimal interval with step value ----
+                                         sliderInput("Gamma_Correction", "Gamma Correction:",
+                                                     min = 0, max = 2,
+                                                     value = 1,step=0.1),
+                                         
+                                         radioButtons('rotation', 'rotation', c('normal'='normal',
+                                                                                'flip'='flip'),
+                                                      selected='normal')
+                                         
+                                         ,downloadButton("downloadPic", "download picture")
+                                         
+                                         
+                                         
+                                         
+                                )
+                                
+                                
+                    )
+                  ),
+                  
+                  # Main panel for displaying outputs ----
+                  mainPanel(
+                    
+                    tabsetPanel(type = "tabs",
+                                tabPanel("picture",
+                                         #tableOutput('table001'),
+                                         
+                                         plotOutput('plot001',height= '500px' )
+                                         
+                                         
+                                         
+                                         
+                                ),
+                                
+                                tabPanel("model_summary",
+                                         
+                                         tableOutput('table002')    ,
+                                         verbatimTextOutput('model_summary')
+                                         
+                                ),
+                                tabPanel("Camera",
+                                         
+                                         shinyviewr_UI("my_camera", height = '400px')  ,
+                                         h2("Taken Photo:"),
+                                         imageOutput("snapshot")
+                                         #plotOutput('predPlot')
+                                         
+                                )
+                                
+                                
+                                
+                    )
+                  )
+                )
+)
+
+
+########################################################
+
+
+###############  Server.R     ###########################
+
+
+
+
+#  server.R
+server <- function(input, output,session) {
+  
+  
+  ################  myCamera
+  myCamera <- callModule(
+    shinyviewr,
+    'my_camera',
+    output_width = 400,
+    output_height = 400
+  )
+  
+  output$snapshot <- renderPlot({
+    
+    req(myCamera())
+    plot(myCamera(), main = 'My Photo!')
+    
+  })
+  
+  v <- reactiveValues(counter = 1)
+  observeEvent(myCamera(), {
+    
+    v$counter =2
+    png(filename="cam.png")
+    plot(myCamera(), main = 'My Photo!')
+    dev.off()
+    # make predictions then decode and print them
+    
+    
+  })
+  
+  
+  
+  #############################################################
+  
+  
+  #################  photo changer ############################## 
+  data001=reactive({
+    if(is.null(input$input001)==FALSE){
+      im <- readImage(input$input001$datapath)
+      
+      #im <- load.image('dog_sample001.jpg')
+    }
+    else if(v$counter==2){
+      
+      im <- readImage('cam.png')
+    }
+    else{
+      im <- readImage('dog_sample001.jpg')
+    }
+    
+    after_im=((EBImage::resize(im,input$img_width,input$img_height) +input$Brightness)*input$Contrast)^input$Gamma_Correction 
+    if (input$rotation=='normal'){
+      after_im2=after_im
+    }else{
+      after_im2=flip(after_im)
+    }
+  })
+  
+  ###################### model 
+  observeEvent(input$Run_model,{
+    withProgress(message = 'Running model', value = 0.1, {
+      ############  tiny_yolo ################################
+      if(input$model=='tiny_yolo'){
+        writeImage(data001(), 'output.jpg', quality = 85)
+        Sys.sleep(0.2)
+        tiny_yolo_pretrain_weight = system.file(package="image.darknet","models","tiny-yolo-voc.weights")
+        setProgress(0.1)
+        pre_labels = system.file(package="image.darknet","include","darknet","data","voc.names")
+        Sys.sleep(0.2)
+        R_yolo =image_darknet_model(type="detect", model = "tiny-yolo-voc.cfg", 
+                                    weights= tiny_yolo_pretrain_weight,
+                                    labels= pre_labels )
+        
+        
+        yolo_pred=image_darknet_detect(file = paste0(getwd(),'/output.jpg'),object = R_yolo, threshold = 0.15)
+        
+        setProgress(0.5)
+        im <- readImage('predictions.png')
+        Sys.sleep(0.2)
+        #####################################################################################
+        model <- system.file(package="image.darknet", "include", "darknet", "cfg", "tiny.cfg")
+        weights <- system.file(package="image.darknet", "models", "tiny.weights")
+        f <- system.file(package="image.darknet", "include", "darknet", "data", "imagenet.shortnames.list")
+        labels <- readLines(f)
+        darknet_tiny <- image_darknet_model(type = 'classify', 
+                                            model = model, weights = weights, labels = labels)
+        
+        
+        
+        x <- image_darknet_classify(file = paste0(getwd(),'/output.jpg'), object = darknet_tiny)
+        
+        pre_table=do.call(rbind.data.frame, x[2]) %>% transmute(label=label,probability=probability) %>% head(3)
+        
+        Sys.sleep(0.2)
+        
+        
+        output$plot001=renderPlot({
+          
+          plot(im)
+        })
+        
+        output$table001=renderTable({
+          pre_table
+        })
+        
+        output$plot002=renderPlotly({
+          data_table001=pre_table
+          data_table001$label <- factor(data_table001$label, levels = unique(data_table001$label)[order(data_table001$probability)])
+          p <- plot_ly(data_table001, x = ~probability, y = ~label, color=~label,type = 'bar') %>% layout(showlegend = FALSE)
+          p
+        })
+        
+        output$table002=renderTable({
+          model_params
+          
+        })
+        
+        
+        output$model_summary <- renderPrint({
+          darknet_tiny
+        })
+        
+        
+        setProgress(1)
+        
+        ################       dog_cat_CNN_model    ################################################
+        
+      }else if(input$model=='dog_cat_CNN_model'){
+        writeImage(data001(), 'output.jpg', quality = 85)
+        
+        new_model <- load_model_hdf5("dog_cat_cnn_model_2.h5")
+        setProgress(0.5)
+        model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
+        img_path <- "output.jpg"
+        img <- image_load(img_path, target_size = c(150,150))
+        Sys.sleep(0.2)
+        x <- image_to_array(img)/225
+        x <- array_reshape(x, c(1, dim(x)))
+        
+        predcition <- as.data.frame(new_model %>% predict(x)) %>% rename(Cat=V1, Dog=V2)
+        
+        
+        output$plot001=renderPlot({
+          
+          plot(data001())
+        })
+        
+        output$table001=renderTable({
+          predcition
+        })
+        
+        output$plot002=renderPlotly({
+          data_table001=predcition
+          
+          data_table001 =data_table001%>%melt() %>% rename(probability=value,label=variable)
+          
+          
+          data_table001$label <- factor(data_table001$label, levels = unique(data_table001$label)[order(data_table001$probability)])
+          p <- plot_ly(data_table001, x = ~probability, y = ~label, color=~label,type = 'bar') %>% layout(showlegend = FALSE)
+          p
+        })
+        
+        output$table002=renderTable({
+          model_params
+        })
+        
+        
+        
+        output$model_summary <- renderPrint({
+          print(summary(new_model))
+        })
+        
+        
+        setProgress(1)
+        
+        ################       VGG16_dog_cat_cnn_model    ################################################
+        
+      }else if(input$model=='VGG16_dog_cat_cnn_model'){
+        
+        writeImage(data001(), 'output.jpg', quality = 85)
+        
+        Sys.sleep(0.2)
+        
+        
+        new_model <- load_model_hdf5("VGG16_dog_cat_cnn_model.h5")
+        setProgress(0.5)
+        model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
+        img_path <- "output.jpg"
+        img <- image_load(img_path, target_size = c(150,150))
+        Sys.sleep(0.2)
+        x <- image_to_array(img)/225
+        x <- array_reshape(x, c(1, dim(x)))
+        
+        predcition <- as.data.frame(new_model %>% predict(x)) %>% rename(Cat=V1, Dog=V2)
+        
+        
+        
+        output$plot001=renderPlot({
+          
+          plot(data001())
+        })
+        
+        output$table001=renderTable({
+          predcition
+        })
+        
+        output$plot002=renderPlotly({
+          data_table001=predcition
+          
+          data_table001 =data_table001%>%melt() %>% rename(probability=value,label=variable)
+          
+          
+          data_table001$label <- factor(data_table001$label, levels = unique(data_table001$label)[order(data_table001$probability)])
+          p <- plot_ly(data_table001, x = ~probability, y = ~label, color=~label,type = 'bar') %>% layout(showlegend = FALSE)
+          p
+        })
+        
+        output$table002=renderTable({
+          model_params
+        })
+        
+        
+        
+        output$model_summary <- renderPrint({
+          print(summary(new_model))
+        })
+        
+        
+        setProgress(1)
+        
+        
+        
+        ################       mobilenet_model    ################################################
+      }else if(input$model=='mobilenet_model'){
+        writeImage(data001(), 'output.jpg', quality = 85)
+        
+        new_model <- load_model_hdf5("mobilenet_model.h5")
+        setProgress(0.5)
+        model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
+        img_path <- "output.jpg"
+        img <- image_load(img_path, target_size = c(224,224))
+        Sys.sleep(0.2)
+        x <- image_to_array(img)
+        x <- array_reshape(x, c(1, dim(x)))
+        x <- imagenet_preprocess_input(x)
+        
+        preds <- new_model %>% predict(x)
+        predcition=imagenet_decode_predictions(preds, top = 3)[[1]] %>%transmute(label=class_description,probability=score)
+        
+        
+        
+        output$plot001=renderPlot({
+          
+          plot(data001())
+        })
+        
+        output$table001=renderTable({
+          predcition
+        })
+        
+        output$plot002=renderPlotly({
+          data_table001=predcition
+          data_table001$label <- factor(data_table001$label, levels = unique(data_table001$label)[order(data_table001$probability)])
+          p <- plot_ly(data_table001, x = ~probability, y = ~label, color=~label,type = 'bar') %>% layout(showlegend = FALSE)
+          p
+        })
+        
+        output$table002=renderTable({
+          model_params
+        })
+        
+        
+        
+        output$model_summary <- renderPrint({
+          print(summary(new_model))
+        })
+        
+        
+        setProgress(1)
+        
+        
+        
+        ################       resnet50_model    ################################################
+      }else if(input$model=='resnet50_model'){
+        writeImage(data001(), 'output.jpg', quality = 85)
+        new_model <- application_resnet50(weights = 'imagenet')
+        #new_model <- load_model_hdf5("resnet50_model.h5")
+        setProgress(0.5)
+        model_params=as.data.frame(count_params(new_model)) %>% transmute(model_params=count_params(new_model))
+        img_path <- "output.jpg"
+        Sys.sleep(0.2)
+        img <- image_load(img_path, target_size = c(224,224))
+        x <- image_to_array(img)
+        x <- array_reshape(x, c(1, dim(x)))
+        x <- imagenet_preprocess_input(x)
+        # make predictions then decode and print them
+        preds <- new_model %>% predict(x)
+        predcition=imagenet_decode_predictions(preds, top = 3)[[1]] %>%transmute(label=class_description,probability=score)
+        
+        output$plot001=renderPlot({
+          
+          plot(data001())
+        })
+        
+        output$table001=renderTable({
+          predcition
+        })
+        
+        
+        
+        output$plot002=renderPlotly({
+          data_table001=predcition
+          data_table001$label <- factor(data_table001$label, levels = unique(data_table001$label)[order(data_table001$probability)])
+          p <- plot_ly(data_table001, x = ~probability, y = ~label, color=~label,type = 'bar') %>% layout(showlegend = FALSE)
+          p
+        })
+        
+        output$table002=renderTable({
+          model_params
+        })
+        
+        
+        
+        
+        output$model_summary <- renderPrint({
+          print(summary(new_model))
+        })
+        
+        
+        setProgress(1)
+        
+      }
+    })
+    
+    
+    #######################################
+    
+    
+    
+  })
+  
+  
+  
+  
+  output$plot001=renderPlot({
+    
+    plot(data001())
+  })
+  #################    download pic   ######################################
+  output$downloadPic <- downloadHandler(
+    
+    filename <- function() {
+      paste("output", "jpg", sep=".")
+    },
+    
+    content <- function(file) {
+      writeImage(data001(), 'output.jpg', quality = 85)
+      file.copy("output.jpg", file)
+    }
+    
+  )
+  
+}
+
+
+# Run the app ----
+shinyApp(ui = ui, server = server)
