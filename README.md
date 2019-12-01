@@ -24,4 +24,4 @@ https://www.kaggle.com/tduan007/voice-recognition
 
 
 ## Demo:
-![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/object_detection.gif){ width="300" height="600" 
+![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/object_detection.gif){width="300" height="600"}
