@@ -2,11 +2,11 @@
  
  
 ## Demo:
-![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/blob/master/object_detection.gif)
- 
+![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/object_detection.gif)
+
  
 ## App structure:
-![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/blob/master/9.png)
+![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/9.png)
 
  
 ## object_detection_shiny app:
