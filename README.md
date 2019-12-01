@@ -1,10 +1,7 @@
 # Object_detection_shiny
  
  
-## Demo:
-![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/object_detection.gif)
 
- 
 ## App structure:
 ![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/9.png)
 
@@ -24,3 +21,7 @@ https://www.kaggle.com/tduan007/vgg16-transfer-learning-cat-vs-dog-cnn-model
  
 ## voice-recognitionmodel:
 https://www.kaggle.com/tduan007/voice-recognition
+
+
+## Demo:
+![alt text](https://raw.githubusercontent.com/TonyFly3000/Object_detection_shiny/master/object_detection.gif){ width="300" height="600" 
